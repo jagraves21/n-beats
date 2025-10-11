@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 import torch
 import torch.nn
@@ -36,6 +38,15 @@ class TrendBlock(NBeatsBlock):
 			val = getattr(self, name)
 			if not isinstance(val, int) or val < 0:
 				raise ValueError(f"{name} must be a non-negative integer, got {val!r}.")
+
+		if self.degree > min(self.backcast, self.forecast) // 2:
+			warnings.warn(
+				f"degree={self.degree} may be too high for backcast={self.backcast} "
+				f"and forecast={self.forecast}. Consider using a lower degree "
+				f"(<= {min(self.backcast, self.forecast) // 2}) to avoid numerical instability or overfitting.",
+				UserWarning,
+				stacklevel=2,
+			)
 
 	def _get_basis(self, tt):
 		basis = np.vander(tt, N=self.n_theta, increasing=True)

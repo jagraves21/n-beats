@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 import torch
 import torch.nn
@@ -31,6 +33,15 @@ class SeasonalityBlock(NBeatsBlock):
 			val = getattr(self, name)
 			if not isinstance(val, int) or val < 0:
 				raise ValueError(f"{name} must be a non-negative integer, got {val!r}.")
+
+		if self.n_harmonics > min(self.backcast, self.forecast) // 2:
+			warnings.warn(
+				f"n_harmonics={self.n_harmonics} may be too high for backcast={self.backcast} "
+				f"and forecast={self.forecast}. Consider using fewer harmonics "
+				f"(<= {min(self.backcast, self.forecast)//2}) to avoid numerical instability.",
+				UserWarning,
+				stacklevel=2,
+			)
 
 	def _get_basis(self, tt):
 		harmonics = np.arange(1, self.n_harmonics + 1)
