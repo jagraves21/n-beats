@@ -1,3 +1,6 @@
+# https://research.monash.edu/en/publications/the-tourism-forecasting-competition
+# https://robjhyndman.com/publications/the-tourism-forecasting-competition/
+
 import os
 import requests
 
