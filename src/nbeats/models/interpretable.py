@@ -44,3 +44,4 @@ class NBeatsInterpretable(NBeatsModelBase):
                 shared_weights=self.shared_weights
             )
         ]
+

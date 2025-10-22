@@ -1,6 +1,9 @@
 from abc import ABC, abstractmethod
+import datetime
+import glob
 import logging
 import os
+import re
 import requests
 
 import pandas as pd
@@ -17,14 +20,20 @@ class DatasetManager(ABC):
 		self.dataset_dir = os.path.join(self.paths.get_data_dir(), dataset_name)
 		self.raw_dir = os.path.join(self.dataset_dir, "raw")
 		self.processed_dir = os.path.join(self.dataset_dir, "processed")
+		self.artifacts_dir = os.path.join(self.dataset_dir, "artifacts")
 		self.results_dir = os.path.join(self.dataset_dir, "results")
 		self.figures_dir = os.path.join(self.dataset_dir, "figures")
 		
-		logging.basicConfig(
-			level=logging.INFO,
-			format="%(asctime)s - %(levelname)s - %(message)s"
-		)
 		self.logger = logging.getLogger(__name__)
+		self.logger.setLevel(logging.INFO)
+		if not self.logger.handlers:
+			ch = logging.StreamHandler()
+			ch.setLevel(logging.INFO)
+
+			formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+			ch.setFormatter(formatter)
+
+			self.logger.addHandler(ch)
 
 	# --- Optional Methods for Subclass Implementation ---
 	def download_dataset(self, force=False):
@@ -40,17 +49,24 @@ class DatasetManager(ABC):
 	def get_processed_dir(self):
 		return self.processed_dir
 
+	def get_artifacts_dir(self):
+		return self.artifacts_dir
+
 	def get_results_dir(self):
 		return self.results_dir
 
 	def get_figures_dir(self):
 		return self.figures_dir
 
+	# --- Path Helpers ---
 	def get_raw_file_path(self, filename=None):
 		return self.raw_dir if filename is None else os.path.join(self.raw_dir, filename)
 
 	def get_processed_file_path(self, filename=None):
 		return self.processed_dir if filename is None else os.path.join(self.processed_dir, filename)
+
+	def get_artifacts_file_path(self, filename=None):
+		return self.artifacts_dir if filename is None else os.path.join(self.artifacts_dir, filename)
 
 	def get_results_file_path(self, filename=None):
 		return self.results_dir if filename is None else os.path.join(self.results_dir, filename)
@@ -94,6 +110,31 @@ class DatasetManager(ABC):
 			result[sheet_name] = df
 		return result
 
+	@staticmethod
+	def _get_latest_file(directory, base_filename):
+		base_name, file_extension = os.path.splitext(base_filename)
+		base_path = os.path.join(directory, base_filename)
+		pattern = os.path.join(directory, f"{base_name}_*{file_extension}")
+		matching_files = glob.glob(pattern)
+
+		timestamp_regex = re.compile(
+			rf"^{re.escape(base_name)}_\d{{4}}-\d{{2}}-\d{{2}}_\d{{2}}-\d{{2}}-\d{{2}}{re.escape(file_extension)}$"
+		)
+
+		valid_files = [
+			filename
+			for filename in matching_files
+			if timestamp_regex.match(os.path.basename(filename))
+		]
+
+		if valid_files:
+			return sorted(valid_files)[-1]
+
+		if os.path.exists(base_path):
+			return base_path
+
+		return None
+
 	# --- Public Save Methods ---
 	def save_processed_dataframe(self, df, filename, append=False, index=True, suppress_logs=False):
 		path = self.get_processed_file_path(filename)
@@ -101,6 +142,18 @@ class DatasetManager(ABC):
 			df, path, append=append, index=index, suppress_logs=suppress_logs,
 			log_message=f"Saved DataFrame to processed directory: {path}"
 		)
+		return path
+	
+	def save_model(self, model, base_filename):
+		import torch
+		timestamp_str = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+		base_name, file_extension = os.path.splitext(base_filename)
+		timestamped_filename = f"{base_name}_{timestamp_str}{file_extension}"
+		path = self.get_artifacts_file_path(timestamped_filename)
+		os.makedirs(os.path.dirname(path), exist_ok=True)
+		torch.save(model, path)
+		self.log(f"Saved model to artifacts directory: {path}")
+		return path
 
 	def save_results_dataframe(self, df, filename, append=False, index=True, suppress_logs=False):
 		path = self.get_results_file_path(filename)
@@ -108,6 +161,7 @@ class DatasetManager(ABC):
 			df, path, append=append, index=index, suppress_logs=suppress_logs,
 			log_message=f"Saved DataFrame to results directory: {path}"
 		)
+		return path
 	
 	def save_results_figure(self, fig, filename, suppress_logs=False):
 		path = self.get_figures_file_path(filename)
@@ -115,6 +169,7 @@ class DatasetManager(ABC):
 		fig.savefig(path, bbox_inches="tight")
 		if not suppress_logs:
 			self.log(f"Saved figure to figures directory: {path}")
+		return path
 
 	# --- Public Load Methods ---
 	def load_raw_dataframe(self, filename, header=None, index_col=0, nrows=None, verbose=True):
@@ -128,6 +183,13 @@ class DatasetManager(ABC):
 		return self._load_csv_dataframe(
 			path, header=header, index_col=index_col, nrows=nrows, verbose=verbose
 		)
+	
+	def load_model(self, base_filename):
+		import torch
+		path = DatasetManager._get_latest_file(self.get_artifacts_dir(), base_filename)
+		if path is None:
+			raise FileNotFoundError(f"No file found for '{base_filename}' in {self.get_artifacts_dir()}")
+		return torch.load(path, map_location="cpu")
 
 	def load_results_dataframe(self, filename, header=None, index_col=0, nrows=None, verbose=True):
 		path = self.get_results_file_path(filename)

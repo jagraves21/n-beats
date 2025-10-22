@@ -88,7 +88,7 @@ class SlidingWindowDataset(Dataset):
 		if yy.ndim == 1:
 			yy = yy.reshape(-1, 1)
 
-		return xx, yy
+		return xx.squeeze(-1), yy.squeeze(-1)
 
 	def _getslice(self, idx):
 		indices = range(*idx.indices(len(self)))
@@ -105,5 +105,5 @@ class SlidingWindowDataset(Dataset):
 		if self.to_tensor:
 			return torch.stack(xx_list), torch.stack(yy_list)
 		else:
-			return np.stack(xx_list), np.stack(yy_list)
+			return np.stack(xx_list).squeeze(-1), np.stack(yy_list).squeeze(-1)
 

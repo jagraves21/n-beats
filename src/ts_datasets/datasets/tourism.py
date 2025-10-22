@@ -52,63 +52,63 @@ class Tourism(DatasetManager):
 	# --- Raw Data Loaders ---
 	def load_yearly_in_data(self, verbose=True):
 		return self.load_raw_dataframe(
-			YEARLY_IN_FILE, header=0, index_col=None, nrows=None, verbose=verbose
+			self.YEARLY_IN_FILE, header=0, index_col=None, nrows=None, verbose=verbose
 		)
 
 	def load_yearly_oos_data(self, verbose=True):
 		return self.load_raw_dataframe(
-			YEARLY_OOS_FILE, header=0, index_col=None, nrows=None, verbose=verbose
+			self.YEARLY_OOS_FILE, header=0, index_col=None, nrows=None, verbose=verbose
 		)
 	
 	def load_quarterly_in_data(self, verbose=True):
 		return self.load_raw_dataframe(
-			QUARTERLY_IN_FILE, header=0, index_col=None, nrows=None, verbose=verbose
+			self.QUARTERLY_IN_FILE, header=0, index_col=None, nrows=None, verbose=verbose
 		)
 
 	def load_quarterly_oos_data(self, verbose=True):
 		return self.load_raw_dataframe(
-			QUARTERLY_OOS_FILE, header=0, index_col=None, nrows=None, verbose=verbose
+			self.QUARTERLY_OOS_FILE, header=0, index_col=None, nrows=None, verbose=verbose
 		)
 
 	def load_monthly_in_data(self, verbose=True):
 		return self.load_raw_dataframe(
-			MONTHLY_IN_FILE, header=0, index_col=None, nrows=None, verbose=verbose
+			self.MONTHLY_IN_FILE, header=0, index_col=None, nrows=None, verbose=verbose
 		)
 
 	def load_monthly_oos_data(self, verbose=True):
 		return self.load_raw_dataframe(
-			MONTHLY_OOS_FILE, header=0, index_col=None, nrows=None, verbose=verbose
+			self.MONTHLY_OOS_FILE, header=0, index_col=None, nrows=None, verbose=verbose
 		)
 
 	# -- Processed Data Loaders ---
 	def load_yearly_data(self, verbose=True):
 		return self.load_processed_dataframe(
-			YEARLY_FILE, header=0, index_col=None, nrows=None, verbose=verbose
+			self.YEARLY_FILE, header=0, index_col=None, nrows=None, verbose=verbose
 		)
 	
 	def load_quarterly_data(self, verbose=True):
 		return self.load_processed_dataframe(
-			QUARTERLY_FILE, header=0, index_col=None, nrows=None, verbose=verbose
+			self.QUARTERLY_FILE, header=0, index_col=None, nrows=None, verbose=verbose
 		)
 
 	def load_monthly_data(self, verbose=True):
 		return self.load_processed_dataframe(
-			MONTHLY_FILE, header=0, index_col=None, nrows=None, verbose=verbose
+			self.MONTHLY_FILE, header=0, index_col=None, nrows=None, verbose=verbose
 		)
 
 	# --- Processed Data Savers ---
 	def save_yearly_data(self, df, suppress_logs=True):
 		self.save_processed_dataframe(
-			df, YEARLY_FILE, append=False, index=False, suppress_logs=False
+			df, self.YEARLY_FILE, append=False, index=False, suppress_logs=False
 		)
 
 	def save_quarterly_data(self, df, suppress_logs=True):
 		self.save_processed_dataframe(
-			df, QUARTERLY_FILE, append=False, index=False, suppress_logs=False
+			df, self.QUARTERLY_FILE, append=False, index=False, suppress_logs=False
 		)
 
 	def save_monthly_data(self, df, suppress_logs=True):
 		self.save_processed_dataframe(
-			df, MONTHLY_FILE, append=False, index=False, suppress_logs=False
+			df, self.MONTHLY_FILE, append=False, index=False, suppress_logs=False
 		)
 

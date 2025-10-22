@@ -27,11 +27,16 @@ class NBeatsStack(torch.nn.Module, ABC):
 			])
 
 	def _validate_params(self):
-		for name in ["n_blocks", "backcast", "forecast", "n_theta"]:
+		for name in ["n_blocks", "backcast", "forecast", "n_layers", "n_theta"]:
 			val = getattr(self, name)
 			if not isinstance(val, int) or val <= 0:
 				raise ValueError(f"{name} must be a positive integer, got {val!r}.")
-				
+
+		for name in ["hidden_dim"]:
+			val = getattr(self, name)
+			if val is not None and (not isinstance(val, int) or val <= 0):
+				raise ValueError(f"{name} must be a positive integer or None, got {val!r}.")
+
 		if not isinstance(self.shared_weights, bool):
 			raise ValueError(
 				f"shared_weights must be a boolean (True or False), got {type(self.shared_weights).__name__}."
@@ -41,20 +46,28 @@ class NBeatsStack(torch.nn.Module, ABC):
 	def _build_block(self):
 		pass
 
-	def forward(self, X):
-		residual = X
+	def forward(self, X, return_intermediates=False):
 		backcast_list = list()
 		forecast_list = list()
 		residual_list = list()
-
+		
+		forecast_sum = None
+		residual = X
 		for block in self.blocks:
 			backcast, forecast = block(residual)
 
-			backcast_list.append(backcast)
-			forecast_list.append(forecast)
-
 			residual = residual - backcast
-			residual_list.append(residual)
+			if forecast_sum is None:
+				forecast_sum = torch.zeros_like(forecast)
+			forecast_sum += forecast
+		
+			if return_intermediates:
+				backcast_list.append(backcast.detach().cpu().numpy())
+				forecast_list.append(forecast.detach().cpu().numpy())
+				residual_list.append(residual.detach().cpu().numpy())
 
-		forecast_sum = torch.stack(forecast_list, dim=0).sum(dim=0)
-		return backcast_list, forecast_list, residual_list, residual, forecast_sum
+		if return_intermediates:
+			return backcast_list, forecast_list, residual_list, residual, forecast_sum
+		else:
+			return residual, forecast_sum
+
